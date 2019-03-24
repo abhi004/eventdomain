@@ -11,32 +11,33 @@ using Microsoft.Azure.EventGrid.Models;
 using Microsoft.Azure.WebJobs.Host;
 using System.Net;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace CosmosUpdate
 {
     public static class CosmosUpdate
     {
-        public static readonly string connectionStringSetting = Environment.GetEnvironmentVariable("AzureWebJobsDocumentDBConnectionString");
         [FunctionName("CosmosUpdate")]
-        public static async Task<IActionResult> CreateCosmosDocument(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequest req,
+        public static async Task<HttpResponseMessage> CreateCosmosDocument(
+    [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]HttpRequestMessage req,
     [CosmosDB(databaseName: "sample0102",
     collectionName: "sample01",
     ConnectionStringSetting = "CosmosDBConnection",CreateIfNotExists = true,PartitionKey = "/sample")]
     IAsyncCollector<CosmosFunctionEvent> cosmosevent, ILogger log)
         {
-             EventGridEvent[] events = JsonConvert.DeserializeObject<EventGridEvent[]>(await new StreamReader(req.Body).ReadToEndAsync());
+             EventGridEvent[] events = JsonConvert.DeserializeObject<EventGridEvent[]>(await req.Content.ReadAsStringAsync());
 
             if (events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
             {
                 JObject intialvalidationcode = JObject.Parse(JsonConvert.SerializeObject(events[0].Data));
 
-                var response = new ContentResult()
+                var Response = new SubscriptionValidationResponse()
                 {
-                    Content =(string)intialvalidationcode["validationCode"]
+                    ValidationResponse = (string)intialvalidationcode["validationCode"]
                 };
-                return response;
-            }
+
+            return req.CreateResponse(HttpStatusCode.OK, Response);
+        }
             else
             {
                 foreach (EventGridEvent item in events)
@@ -46,7 +47,7 @@ namespace CosmosUpdate
                     obj.data = item.Data.ToString();
                     await cosmosevent.AddAsync(obj);
                 }
-                return new OkObjectResult(events);
+                return req.CreateResponse(HttpStatusCode.OK, events);
             }
 
         }
