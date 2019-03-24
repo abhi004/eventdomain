@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "EventPublish": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "event_domain_key": "CoxSMyGsezUhXYz2FshjQ9yvZUUiIeXk0jcAs6TVgHs=",
+        "event_domain_hostname": "https://azeventrouterdomain.australiasoutheast-1.eventgrid.azure.net/api/events"
+      }
+    }
+  }
+}
